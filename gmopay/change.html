@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>金額変更画面</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <h1>金額変更</h1>
+  <div class="wrapper">
+    <div class="pubwrapper">
+      <div class="orderid">注文ID</div>
+      <input type="text" id="orderid" class="orderid" name="orderid" value=""
+        onchange="sendOrderid()">&nbsp;&emsp;&emsp;
+    </div>
+    <div class="pubwrapper">
+      <div class="customername">店舗名</div>
+      <input type="text" id="customername" class="customername" name="customername" value="" readonly>&nbsp;様
+    </div>
+    <div class="pubwrapper">
+      <div class="nowPricelabel">旧価格</div>
+      <input type="text" id="nowPrice" class="nowPrice" placeholder="" value="" readonly>&nbsp;円
+    </div>
+    <div class="pubwrapper">
+      <div class="updatePricelabel">新価格</div>
+      <input type="text" id="updatePrice" class="updatePrice" placeholder="" value="">&nbsp;円
+    </div>
+    <div class="pubwrapper">
+      <button type="button" id="btnChange" class="button-g button-4 button-standard"
+        onclick="changePrice()">金額変更</button>
+    </div>
+    <div class="pubwrapper">
+      <button type="button" class="button-g button-6 button-standard" role="button" onclick="history.back()">トップへ戻る
+    </div>
+  </div>
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // 注文ID
+    const orderidDom = document.getElementById('orderid');
+    // 店舗名
+    const shopnameDom = document.getElementById('customername');
+    // 旧価格
+    const nowPriceDom = document.getElementById('nowPrice');
+    // 新価格
+    const updatePriceDom = document.getElementById('updatePrice');
+
+    // 発行完了
+    window.api.on('price_edit_finish', arg => {
+      // クリア
+      orderidDom.value = '';
+      shopnameDom.value = '';
+      nowPriceDom.value = '';
+      updatePriceDom.value = '';
+    });
+
+    // 注文ID
+    window.api.on('orderid_finish', arg => {
+      // 価格入力
+      nowPriceDom.value = arg.price;
+      // 店舗名入力
+      shopnameDom.value = arg.shopname;
+    });
+
+    // 注文ID送信
+    const sendOrderid = () => {
+      try {
+        console.log("send orderid mode");
+        // 注文ID
+        const orderid = orderidDom.value;
+        // 注文ID検索モード
+        window.api.send("searchorderid", orderid);
+
+      } catch (e) {
+        // エラー処理
+        window.api.send("error", e);
+      }
+    }
+
+    // 注文ID送信
+    const changePrice = () => {
+      try {
+        console.log("change price mode");
+        // 注文ID
+        const orderid = orderidDom.value;
+        // 新価格
+        const updatePrice = updatePriceDom.value;
+        // 注文金額更新モード
+        window.api.send("changeprice", {
+          id: orderid,
+          price: updatePrice
+        });
+
+      } catch (e) {
+        // エラー処理
+        window.api.send("error", e);
+      }
+    }
+  </script>
+</body>
+
+</html>

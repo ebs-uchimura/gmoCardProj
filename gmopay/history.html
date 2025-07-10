@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>履歴画面</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/history.css">
+</head>
+
+<body>
+  <h1 id="maintitle">履歴確認</h1>
+  <div class="btnwrapper">
+    <input type="text" id="customerno" class="box-standard" name="customerno" required minlength="1" maxlength="7"
+      size="10" placeholder="例:999999">
+    <button type="button" id="btnSearch" class="button-g button-6 button-narrow" onclick="searchNo()">検索</button>
+    <button type="button" id="btnPaid" class="button-g button-standard" onclick="paidAll()">支払済み</button>
+    <button type="button" id="btnnoPaid" class="button-g button-standard" onclick="nopaidAll()">未払い</button>
+    <button type="button" id="btnRecent" class="button-g button-8 button-standard" onclick="pendingAll()">未処理</button>
+    <button type="button" id="btnReset" class="button-g button-standard" onclick="showAll()">全件表示</button>
+    <button type="button" id="btnReset" class="button-g button-4 button-standard" onclick="resetAll()">リセット</button>
+    <div id="noArea"></div>
+  </div>
+  <h2 id="subtitle">編集モード</h2>
+  <div id="table-wrapper" class="table-wrapper">
+    <table id="resultTable"></table>
+  </div>
+  <div id="edit-table-wrapper" class="edit-table-wrapper">
+    <table id="resultEditTable"></table>
+  </div>
+  <div class="container">
+    <div>
+      <span id="js-pagination-result-total"></span>件
+      <span id="js-pagination-result-range-text"></span>
+    </div>
+    <div class="button-container">
+      <button id="js-button-prev" class="button-g button-standard" onclick="goprev()">
+        前へ
+      </button>
+      <button id="js-button-next" class="button-g button-standard" onclick="goforward()">
+        次へ
+      </button>
+      <div>
+        <nav id="js-pagination-result-range"></nav>
+        <span id="js-pagination-current"></span>
+      </div>
+    </div>
+  </div>
+  <div class="button-container">
+    <button type="button" id="editbutton" class="editbutton button-g button-4 button-standard" role="button"
+      onclick="goEdit()">編集</button>
+    <button type="button" id="deletebutton" class="deletebutton button-g button-8 button-standard" role="button"
+      onclick="finishEdit()">削除</button>
+    <button type="button" id="backbutton" class="backbutton button-g button-6 button-standard" role="button"
+      onclick="transfer('history_page');">前に戻る</button>
+    <button type="button" id="topbutton" class="topbutton button-g button-6 button-standard" role="button"
+      onclick="transfer('top_page');">トップへ戻る</button>
+  </div>
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // 現在のページ
+    let currentPage = 0;
+    // 総数
+    let globalTotalItem = 0;
+    // モード
+    let globalMode = 'normal';
+    // 検索フラグ
+    let globalSearchFlg = false;
+    // 編集フラグ
+    let globalEditFlg = false;
+    // エラーメッセージ
+    let errorArray = [];
+    // 1ページに表示したい件数
+    const PER_PAGE = 15;
+
+    // 編集テーブル非表示
+    document.getElementById('edit-table-wrapper').style.display = "none";
+    // サブタイトル変更
+    document.getElementById('subtitle').style.display = "none";
+    // タイトル変更
+    document.getElementById('maintitle').innerHTML = "履歴確認画面";
+
+    // 項目名辞書
+    const dictionary = Object.freeze({
+      'id': 'ID',
+      'copy': 'コピー',
+      'customerno': '顧客番号',
+      'shopname': '店舗名',
+      'total': '合計金額',
+      'status': '状態',
+      'payment': '支払',
+      'publishdate': 'URL発行日時',
+      'updatedate': '更新日時',
+      'orderid': 'オーダーID',
+      'delete': '削除',
+    });
+
+    // エラー辞書
+    const errMessageDictionaryE = Object.freeze({
+      'E01050004': '売上重複',
+      'E11010003 ': 'ボーナス払いエラー',
+      'E01240002': 'カード存在なし',
+      'E01260010': '加盟店契約なし',
+      'E21010201': '取引エラー',
+      'E21010202': '3Dセキュア必須化エラー',
+      'E21030001': '3DS2.0認証失敗(認証初期化)',
+      'E21030007': '3DS2.0認証失敗',
+      'E21030201': '3DS2.3DS2.0認証未対応エラー',
+      'E21030202': '3DS2.0認証必須エラー',
+      'E21040001': '閉塞後取扱未設定エラー',
+      'E21040002': '閉塞後利用エラー',
+      'E31500014': '3DS1.0閉塞後取扱未設定エラー',
+      'E41170099': '3DS2.0認証失敗',
+      'E61010001': '3DS2.0認証失敗',
+      'E61010002': '加盟店契約なし',
+      'E61010003': 'ボーナス払いエラー',
+    });
+
+    // エラー辞書
+    const errMessageDictionaryG = Object.freeze({
+      '42G020000': '残高不足',
+      '42G030000': '限度額オーバー',
+      '42G040000': '残高不足',
+      '42G050000': '限度額オーバー',
+      '42G060000': '残高不足',
+      '42G070000': 'カード会社とのエラー',
+      '42G120000': '取扱不可',
+      '42G220000': '取扱不可',
+      '42G300000': '保留判定',
+      '42G420000': '暗証番号エラー',
+      '42G430000': '取扱不可',
+      '42G440000': 'セキュリティコード誤り',
+      '42G450000': 'セキュリティコード入力無',
+      '42G540000': '取扱不可',
+      '42G550000': '限度額オーバー',
+      '42G560000': 'カード取り込み',
+      '42G600000': '事故カード',
+      '42G610000': '無効カード',
+      '42G650000': '会員番号エラー',
+      '42G670000': '商品コードエラー',
+      '42G680000': '金額エラー',
+      '42G690000': '税送料エラー',
+      '42G700000': 'ボーナス回数エラー',
+      '42G710000': 'ボーナス月エラー',
+      '42G720000': 'ボーナス額エラー',
+      '42G730000': '支払開始月エラー',
+      '42G740000': '分割回数エラー',
+      '42G750000': '分割金額エラー',
+      '42G760000': '初回金額エラー',
+      '42G770000': '業務区分エラー',
+      '42G780000': '支払区分エラー',
+      '42G790000': '照会区分エラー',
+      '42G800000': '取消区分エラー',
+      '42G810000': '取消取扱区分エラー',
+      '42G830000': '有効期限エラー',
+      '42G840000': 'カード会社とのエラー',
+      '42G920000': 'カード会社とのエラー',
+      '42G950000': 'カード会社とのエラー',
+      '42G960000': '取扱不可',
+      '42G970000': '取扱不可',
+      '42G980000': '取扱不可',
+      '42G990000': '取扱不可',
+    });
+
+    // 前へ_DOM指定
+    const prevButton = document.getElementById('js-button-prev');
+    // 次へ_DOM指定
+    const nextButton = document.getElementById('js-button-next');
+    // 初期状態は無効
+    prevButton.disabled = true;
+
+    // 前へボタン_アクション
+    prevButton.addEventListener('click', () => {
+      if (1 >= currentPage) {
+        // 無効に
+        prevButton.disabled = true;
+      }
+      if (0 >= currentPage) return;
+      // 有効に
+      nextButton.disabled = false;
+      // ページ減算
+      currentPage--;
+      render();
+    });
+
+    // 次へボタン_アクション
+    nextButton.addEventListener('click', () => {
+      if (PER_PAGE * (currentPage + 2) >= globalTotalItem) {
+        // 無効に
+        nextButton.disabled = true;
+      }
+      if (PER_PAGE * (currentPage + 1) >= globalTotalItem) return;
+      // 有効に
+      prevButton.disabled = false;
+      // ページ加算
+      currentPage++;
+      render();
+    });
+
+    // 閲覧中の情報の件数の範囲を表示
+    const rangeCurrentPage = () => {
+      if (!globalTotalItem) return;
+      const start = currentPage * PER_PAGE + 1;
+      const text =
+        (currentPage + 1) * PER_PAGE < globalTotalItem
+          ? `${start}件〜${(currentPage + 1) * PER_PAGE}件目を表示`
+          : `${start}件〜${globalTotalItem}件目を表示`;
+      return text;
+    };
+
+    // レンダリング
+    const render = () => {
+      // 表示
+      let page;
+      // 一時ページ数
+      const tmpPage = rangeCurrentPage();
+      // 一時ページ数あり
+      if (tmpPage) {
+        // ページ表示
+        page = `中${tmpPage}`;
+
+      } else {
+        // 空ページ
+        page = '';
+      }
+      // トータル件数セット
+      document.getElementById(
+        'js-pagination-result-total'
+      ).innerHTML = globalTotalItem;
+
+      // トータル範囲セット
+      document.getElementById(
+        'js-pagination-result-range-text'
+      ).innerHTML = page;
+    }
+    // レンダリング実行
+    render();
+
+    // 閲覧モード
+    class TableMaker {
+      // テーブル作成
+      static make({ tableId = null, json = null, headers = [] } = {}) {
+        // テーブルDOM
+        const table = document.getElementById(tableId);
+        // jsonが文字列ならパース
+        if (typeof json === 'string') json = JSON.parse(json);
+        // セット
+        table.innerHTML = this.build(json, headers);
+      }
+
+      // ビルドメソッド
+      static build(json, headers) {
+        // データなしフラグ
+        let nodataFlg = false;
+        // マップ
+        const rows = json.map(row => {
+          // ヘッダ
+          if (headers.length === 0) headers = Object.keys(row);
+          // タグ文字列
+          const tdsStr = headers.map(h => {
+            // セル値
+            const v = row[h];
+
+            // タグ返し
+            if (h == 'id' && v == 0) {
+              // データなしフラグオン
+              nodataFlg = true;
+
+            } else if (h == 'copy') {
+              // 合計金額
+              return `<td><button class="urlbutton" onclick="showURL(${v})">URL</button></td>`;
+
+            } else if (h == 'total') {
+              // 合計金額
+              return `<td>${v.toLocaleString()}</td>`;
+
+            } else if (h == 'payment') {
+              // 支払
+              if (v == '1') {
+                return `<td>済</td>`;
+
+              } else {
+                return `<td>未</td>`;
+              }
+            } else if (h == 'status') {
+              // 支払
+              if (v == '保留中') {
+                return `<td class="reg">${v}</td>`;
+
+              } else if (v == '決済済') {
+                return `<td class="comp">${v}</td>`;
+
+              } else if (v.startsWith('E') > 0) {
+                return `<td class="err">${errMessageDictionaryE[v]}</td>`;
+
+              } else if (v.indexOf('G') > 0) {
+                return `<td class="err">${errMessageDictionaryG[v]}</td>`;
+
+              } else if (v == 'キャンセル') {
+                return `<td class="cancel">${v}</td>`;
+
+              } else {
+                return `<td>${v}</td>`;
+              }
+            } else {
+              // それ以外
+              return `<td>${v}</td>`;
+            }
+          }).join('')
+          return `<tr>${tdsStr}</tr>`;
+        });
+        // ヘッダ
+        const thsStr = headers.map(h => `<th>${dictionary[h]}</th>`).join('');
+        // 本文
+        const rowsStr = rows.join('');
+
+        // データなしフラグオン
+        if (nodataFlg) {
+          // テーブルタグ
+          return `<thead><tr>${thsStr}</tr></thead><tbody></tbody>`;
+
+        } else {
+          // テーブルタグ
+          return `<thead><tr>${thsStr}</tr></thead><tbody>${rowsStr}</tbody>`;
+        }
+      }
+    }
+
+    // 編集モード
+    class editTableMaker {
+      // テーブル作成
+      static make({ tableId = null, json = null, headers = [] } = {}) {
+        // テーブルDOM
+        const table = document.getElementById(tableId);
+        // jsonが文字列ならパース
+        if (typeof json === 'string') json = JSON.parse(json);
+        // セット
+        table.innerHTML = this.build(json, headers);
+      }
+
+      // ビルドメソッド
+      static build(json, headers) {
+        // 対象ID
+        let tmpId;
+        // データなしフラグ
+        let nodataFlg = false;
+
+        // マップ
+        const rows = json.map(row => {
+          // ヘッダ
+          if (headers.length === 0) headers = Object.keys(row);
+          // タグ文字列
+          const tdsStr = headers.map(h => {
+            // セル値
+            const v = row[h];
+
+            if (h == 'id') {
+              tmpId = v;
+            }
+
+            // タグ返し
+            if (h == 'id' && v == 0) {
+              // データなしフラグオン
+              nodataFlg = true;
+
+            } else if (h == 'total') {
+              // 合計金額
+              return `<td>${v.toLocaleString()}</td>`;
+
+            } else if (h == 'payment') {
+              // 支払
+              if (v == '1') {
+                return `<td>済</td>`;
+
+              } else {
+                return `<td>未</td>`;
+              }
+
+            } else if (h == 'status') {
+              // 支払
+              if (v == '保留中') {
+                return `<td class="reg">${v}</td>`;
+
+              } else if (v == '決済済') {
+                return `<td class="comp">${v}</td>`;
+
+              } else if (v.startsWith('E') > 0) {
+                return `<td class="err">${errMessageDictionaryE[v]}</td>`;
+
+              } else if (v.indexOf('G') > 0) {
+                return `<td class="err">${errMessageDictionaryG[v]}</td>`;
+
+              } else if (v == 'キャンセル') {
+                return `<td>${v}</td>`;
+
+              } else {
+                return `<td>${v}</td>`;
+              }
+
+            } else if (h == 'delete') {
+              // 削除
+              return `<td><input id='delcell-${tmpId}' name='chkbox' class='del' type='checkbox' value='${tmpId}' onchange='color(${tmpId})'></td>`;
+
+            } else {
+              // それ以外
+              return `<td>${v}</td>`;
+            }
+
+          }).join('');
+
+          return `<tr id='del-${tmpId}'>${tdsStr}</tr>`;
+        });
+        // ヘッダ
+        const thsStr = headers.map(h => `<th>${dictionary[h]}</th>`).join('');
+        // 本文
+        const rowsStr = rows.join('');
+
+        // データなしフラグオン
+        if (nodataFlg) {
+          // テーブルタグ
+          return `<thead><tr>${thsStr}</tr></thead><tbody></tbody>`;
+
+        } else {
+          return `<thead><tr>${thsStr}</tr></thead><tbody>${rowsStr}</tbody>`;
+        }
+      }
+    }
+
+    // 履歴表示
+    window.api.on('history_finish', arg => {
+      // トータル行数
+      globalTotalItem = arg.total;
+      // モード
+      globalMode = arg.mode;
+      // 検索フラグON
+      globalSearchFlg = arg.searchflg;
+      // 編集フラグ
+      globalEditFlg = arg.editflg;
+
+      // 総数が15以下
+      if (globalTotalItem <= PER_PAGE) {
+        // 次へボタン無効化
+        nextButton.disabled = true;
+      } else {
+        // 次へボタン有効化
+        nextButton.disabled = false;
+      }
+      // 検索フラグ
+      if (globalSearchFlg) {
+        // 検索対象顧客番号表示
+        document.getElementById('noArea').innerHTML = `検索中No:${arg.customerno}`;
+      }
+      // 編集フラグ
+      if (globalEditFlg) {
+        // タイトル変更
+        document.getElementById('maintitle').innerHTML = "履歴編集画面";
+        // 通常テーブル非表示
+        document.getElementById('table-wrapper').style.display = "none";
+        // 編集テーブル表示
+        document.getElementById('edit-table-wrapper').style.display = "block";
+        // 削除ボタン非表示
+        document.getElementById('deletebutton').style.display = "block";
+        // 編集ボタン表示
+        document.getElementById('editbutton').style.display = "none";
+        // 前へ戻るボタン非表示
+        document.getElementById('backbutton').style.display = "block";
+        // サブタイトル変更
+        document.getElementById('subtitle').style.display = "block";
+        // テーブル作成
+        editTableMaker.make({ tableId: 'resultEditTable', json: arg.result });
+
+      } else {
+        // タイトル変更
+        document.getElementById('maintitle').innerHTML = "履歴確認画面";
+        // 通常テーブル表示
+        document.getElementById('table-wrapper').style.display = "block";
+        // 編集テーブル非表示
+        document.getElementById('edit-table-wrapper').style.display = "none";
+        // 削除ボタン非表示
+        document.getElementById('deletebutton').style.display = "none";
+        // 編集ボタン表示
+        document.getElementById('editbutton').style.display = "block";
+        // 前へ戻るボタン非表示
+        document.getElementById('backbutton').style.display = "none";
+        // サブタイトル変更
+        document.getElementById('subtitle').style.display = "none";
+        // テーブル作成
+        TableMaker.make({ tableId: 'resultTable', json: arg.result });
+      }
+      // 表描画
+      render();
+    });
+
+    // 編集終了
+    window.api.on('history_edit_finish', arg => {
+      // トップに戻る
+      transfer('history_page');
+    });
+
+    // URL再表示
+    window.api.on('showurl', arg => {
+      // クリップボードなし
+      if (navigator.clipboard == undefined) {
+        // Windowsクリップボード使用
+        window.clipboardData.setData("Text", arg);
+
+      } else {
+        // navクリップボード
+        navigator.clipboard.writeText(arg);
+      }
+    });
+
+    // URL再表示
+    const showURL = (id) => {
+      try {
+        console.log('show url mode');
+        // URL再表示
+        window.api.send('showurl', id);
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 編集
+    const goEdit = () => {
+      try {
+        console.log('edit history mode');
+        // 編集フラグON
+        globalEditFlg = true
+        // テーブル作成
+        transfer('edit_history_page');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 編集モード
+    const finishEdit = async () => {
+      try {
+        // チェックボックス調査
+        const checkboxes = document.querySelectorAll(".del");
+        // チェックindex配列
+        const selectedcheckboxes = [];
+
+        // チェックしたインデックスを取得
+        checkboxes.forEach(checkbox => {
+          // チェック
+          if (checkbox.checked) {
+            // インデックスを追加
+            selectedcheckboxes.push(checkbox.value);
+          }
+        });
+
+        // チェック無し
+        if (selectedcheckboxes.length == 0) {
+          // 編集完了
+          window.api.send('deletehistory', 'none');
+
+        } else {
+          // 編集完了
+          window.api.send('deletehistory', selectedcheckboxes);
+        }
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 顧客番号検索
+    const searchNo = () => {
+      try {
+        console.log('search mode');
+        // モード保存
+        globalMode = 'normal';
+        // 検索モード
+        globalSearchFlg = true;
+        // ページ初期化
+        currentPage = 0;
+
+        // トータル範囲セット
+        const customerNo = document.getElementById('customerno').value;
+        // 支払済み要求
+        window.api.send('searchhistory', {
+          customeno: customerNo,
+          editflg: globalEditFlg,
+        });
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 支払済み
+    const paidAll = () => {
+      try {
+        console.log('paid mode');
+        // モード保存
+        globalMode = 'paid';
+        // ページ初期化
+        currentPage = 0;
+        // サーバ送信
+        sendHistory(currentPage, globalMode, 'none');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 未払い
+    const nopaidAll = () => {
+      try {
+        console.log('no paid mode');
+        // モード保存
+        globalMode = 'nopaid';
+        // ページ初期化
+        currentPage = 0;
+        // サーバ送信
+        sendHistory(currentPage, globalMode, 'none');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 保留中
+    const pendingAll = () => {
+      try {
+        console.log('pending mode');
+        // モード保存
+        globalMode = 'pending';
+        // ページ初期化
+        currentPage = 0;
+        // サーバ送信
+        sendHistory(currentPage, globalMode, 'none');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // リセット
+    const resetAll = () => {
+      try {
+        console.log('reset mode');
+        // 入力クリア
+        document.getElementById('customerno').value = '';
+        // 販売管理No非表示
+        document.getElementById('noArea').innerHTML = '';
+        // リセット要求
+        window.api.send('changehistory', {
+          mode: 'normal',
+          customeno: '',
+          searchflg: false,
+          editflg: globalEditFlg,
+        });
+        // モード保存
+        globalMode = 'normal';
+        // ページ初期化
+        currentPage = 0;
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 全データ表示
+    const showAll = () => {
+      try {
+        console.log('show all history mode');
+        // トータル範囲セット
+        const customerNo = document.getElementById('customerno').value;
+        // 全データ要求
+        window.api.send('changehistory', {
+          mode: 'all',
+          customerno: String(customerNo),
+          searchflg: globalSearchFlg,
+          editflg: globalEditFlg,
+        });
+        // モード保存
+        globalMode = 'all';
+        // ページ初期化
+        currentPage = 0;
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 前へ
+    const goprev = () => {
+      try {
+        console.log('goprev mode');
+        // サーバ送信
+        sendHistory((currentPage - 1) * PER_PAGE, globalMode, 'prev');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // 次へ
+    const goforward = () => {
+      try {
+        console.log('goforward mode');
+        // サーバ送信
+        sendHistory((currentPage + 1) * PER_PAGE, globalMode, 'forward');
+
+      } catch (e) {
+        // エラー処理
+        window.api.send('error', e);
+      }
+    }
+
+    // セル色変更
+    const color = id => {
+      // 対象行
+      const element = document.getElementById(`del-${id}`);
+      // 対象セル
+      const cell = document.getElementById(`delcell-${id}`);
+      // セル色変更
+      if (cell.checked) {
+        // 背景赤
+        element.style.backgroundColor = "#FE4647";
+
+      } else {
+        // 背景白
+        element.style.backgroundColor = "#FFFFFF";
+      }
+    }
+
+    // 履歴送信
+    const sendHistory = (page, mode, direction) => {
+      // トータル範囲セット
+      const customerNo = document.getElementById('customerno').value;
+      // 支払済み要求
+      window.api.send('changehistory', {
+        page: page, // ページ
+        mode: mode, // モード
+        customerno: customerNo, // 顧客番号
+        searchflg: globalSearchFlg, // 検索フラグ
+        editflg: globalEditFlg, // 編集フラグ
+        direction: direction, // 方向
+      });
+    }
+
+    // ページ遷移
+    const transfer = channel => {
+      try {
+        // 配信ページ遷移
+        window.api.send('page', channel);
+
+      } catch (e) {
+        // エラー処理
+        console.log(e);
+      }
+    }
+
+  </script>
+</body>
+
+</html>

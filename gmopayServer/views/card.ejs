@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <title>クレジットカード決済画面</title>
+  <link rel="shortcut icon" href="images/favicon.ico">
+  <link rel="stylesheet" href="/css/threed.css">
+</head>
+
+<body>
+  <h1>カード情報の入力</h1>
+  <div class="wrapper">
+    <h2>ご注文内容<br>▼</h2>
+    <div class="inputwrapper">
+      <div class="title">ご注文者様
+      </div>
+      <div class="body">
+        <%= shopname %>&nbsp;様
+      </div>
+    </div>
+    <div class="inputwrapper">
+      <div class="title">決済金額
+      </div>
+      <div class="body">
+        <%= Number(total).toLocaleString('ja-JP') %>&nbsp;円
+      </div>
+    </div>
+    <p class="line">※ご注文者名が正しいことを確認し、「決済画面へ」を押してください。<br>
+      ※決済確認後にLINEにてご確認させていただきます。</p>
+    <a class="button" href="<%= url %>">決済画面へ</a>
+    <br><br>
+    <p class="attention">
+      ※クレジット決済画面はGMOペイメントゲートウェイ株式会社のサイトに移動いたしますので、お客様のカード番号が外部に流出することはありません。また入力情報はSSLによる256bit暗号化通信を通じて強固に保護されます。</p>
+    <p class="tokusho">特定商取引法に基づく表記</p>
+    <p>飲酒は20歳になってから。飲酒運転は法律で禁止されています。 妊娠中や授乳期の飲酒は、胎児・乳児の発育に悪影響を与えるおそれがあります。</p>
+  </div>
+
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+</body>
+
+</html>

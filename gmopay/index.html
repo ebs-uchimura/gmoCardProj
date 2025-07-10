@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>LINEカード決済(3Dセキュア対応)ツール</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+  <h1 id="maintitle">LINEカード決済(3Dセキュア対応)管理画面</h1>
+  <div id="buttonarea" class="buttonarea">
+
+    <div class="operation_area">
+      <h3>URL発行</h3>
+      <button class="button-g button-wide" value="regist" onclick="transfer('regist_page');">購入URL発行画面</button>
+      <button class="button-g button-wide" value="edit" onclick="transfer('edit_page');">編集URL発行画面</button>
+    </div>
+    <div class="operation_area">
+      <h3>履歴編集</h3>
+      <button class="button-g button-5 button-wide" value="history" onclick="transfer('history_page');">履歴確認画面</button>
+      <button class="button-g button-5 button-wide" value="change" onclick="transfer('change_page');">金額変更画面</button>
+    </div>
+    <div class="operation_area">
+      <h3>顧客登録</h3>
+      <button class="button-g button-6 button-wide" value="reg" onclick="transfer('reguser_page');">顧客登録画面</button>
+      <button class="button-g button-6 button-wide" value="reg" onclick="transfer('edituser_page');">顧客名変更画面</button>
+    </div>
+    <div class="operation_area">
+      <button class="button-g button-8 button-wide" value="exit" onclick="transfer('exit_page');">終了</button>
+    </div>
+  </div>
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // ページ遷移
+    const transfer = channel => {
+      try {
+        // 配信ページ遷移
+        window.api.send("page", channel);
+
+      } catch (e) {
+        // エラー処理
+        console.log(e);
+      }
+    }
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "gmocardapp",
+  "productName": "gmocardapp",
+  "version": "3.2.10",
+  "description": "Electron application for gmocard payment",
+  "main": "build/gmoapp.js",
+  "scripts": {
+    "build": "tsc && chcp 65001",
+    "package-win": "tsc && chcp 65001 && electron-packager . --overwrite --platform=win32 --arch=ia32 --no-prune --icon=assets/gmocard128.ico --out=release-builds --electronVersion=29.3.0",
+    "debug": "node --nolazy --inspect-brk=9229 main.js",
+    "start": "tsc && chcp 65001 && electron ."
+  },
+  "keywords": [],
+  "author": {
+    "name": "ebs-uchimura",
+    "email": "uchimura@ebisu-do.jp"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@types/dotenv": "^8.2.0",
+    "@types/node": "^20.8.9",
+    "@types/urlsafe-base64": "^1.0.31",
+    "axios": "^1.6.5",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.5.2",
+    "dotenv": "^16.4.1",
+    "electron-log": "^5.1.0",
+    "mysql2": "^3.9.7",
+    "urlsafe-base64": "^1.0.0"
+  },
+  "devDependencies": {
+    "electron": "^29.3.0",
+    "electron-packager": "^17.1.2",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <title>既存顧客名変更画面</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+
+<body>
+  <h1 id="maintitle">顧客名変更画面</h1>
+  <div id="wrapper" class="wrapper">
+    <div class="pubwrapper">
+      <div class="customerno">顧客番号</div>
+      <input type="text" id="customerno" class="customerno" name="customerno" value=""
+        onchange="sendCustomeNo()">&nbsp;&emsp;
+    </div>
+    <div class="pubwrapper">
+      <div class="customername">旧店舗名</div>
+      <input type="text" id="customername" class="customername" name="customername" value="" readonly>&nbsp;様
+    </div>
+    <div class="pubwrapper">
+      <div class="newcustomername">新店舗名</div>
+      <input type="text" id="newcustomername" class="newcustomername" name="newcustomername" value="">&nbsp;様
+    </div>
+    <div class="pubwrapper">
+      <button id="publish" class="button-g button-1 button-standard" onclick="editUser()">店舗名変更</button>
+    </div>
+    <div class="pubwrapper">
+      <button type="button" class="button-g button-6 button-standard" role="button" onclick="history.back()">トップへ戻る
+    </div>
+  </div>
+  <footer>
+    <p><small>&copy; 2024 Satsuma Ebisudo All Rights Reserved. </small></p>
+  </footer>
+
+  <script>
+    // エラーフラグ
+    let errorflg = false;
+    // エラーメッセージ
+    let errorArray = [];
+    // 顧客番号
+    const customernoDom = document.getElementById('customerno');
+    // 旧顧客名
+    const customernameDom = document.getElementById('customername');
+    // 新顧客名
+    const newcustomernameDom = document.getElementById('newcustomername');
+
+    // 発行完了
+    window.api.on('useredit_finish', arg => {
+      // クリア
+      customernoDom.value = '';
+      customernameDom.value = '';
+      newcustomernameDom.value = '';
+    });
+
+    // 顧客番号検索完了
+    window.api.on('search_finish', arg => {
+      // 顧客名入力
+      customernameDom.value = arg;
+    });
+
+    // 顧客番号送信
+    const sendCustomeNo = () => {
+      try {
+        console.log("customername check mode");
+        // 配信名
+        const customerno = customernoDom.value;
+        // 顧客番号検索モード
+        window.api.send("searchshop", customerno);
+
+      } catch (e) {
+        // エラー処理
+        window.api.send("error", e);
+      }
+    }
+
+    // ユーザ編集
+    const editUser = () => {
+      try {
+        console.log("user edit mode");
+        // 顧客番号
+        const customerno = customernoDom.value;
+        // 顧客名
+        const newcustomername = newcustomernameDom.value;
+
+        // エラー初期化
+        errorflg = false
+
+        /* バリデーション */
+        // 顧客番号
+        if (customerno == "") {
+          errorArray.push("顧客番号が空欄です");
+          errorflg = true;
+        }
+        // 顧客名
+        if (newcustomername == "") {
+          errorArray.push("顧客名を選択してください");
+          errorflg = true;
+        }
+
+        // エラーなし
+        if (!errorflg) {
+          // 送付内容
+          const newcustomerObj = {
+            customerno: customerno, // 顧客番号
+            newcustomername: newcustomername, // 顧客名
+          }
+          // 配信モード
+          window.api.send("edituser", newcustomerObj);
+
+        } else {
+          // メッセージオプション
+          const messageOption = {
+            title: "エラー",
+            message: errorArray.join("|"),
+            type: "error",
+          }
+          // エラー表示
+          window.api.send("showmessage", messageOption);
+        }
+
+      } catch (e) {
+        // エラー処理
+        window.api.send("error", e);
+      }
+    }
+
+    // クリア
+    const clearAll = () => {
+      try {
+        console.log("clear mode");
+        // フォーム初期化
+        customernoDom.value = '';
+        newcustomernameDom.value = '';
+
+      } catch (e) {
+        // エラー処理
+        window.api.send("error", e);
+      }
+    }
+  </script>
+</body>
+
+</html>

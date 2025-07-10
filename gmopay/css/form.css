@@ -1,0 +1,53 @@
+/*
+/* form.css
+*/
+
+@charset "utf-8";
+
+/* トグルスイッチ */
+.toggle {
+  position: relative;
+  width: 65px;
+  height: 28px;
+  margin: 10px auto;
+  border-radius: 30px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.toggle input[type=checkbox] {
+  display: none;
+}
+.toggle:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #e9e9eb;
+  -webkit-transition: 0.2s ease-out;
+  transition: 0.2s ease-out;
+}
+.toggle:after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 30px;
+  height: 22px;
+  display: block;
+  border-radius: 50px;
+  background: #fff;
+  box-shadow: 0 9px 28px -6px rgba(0, 0, 0, 0.3);
+  -webkit-transition: 0.2s ease-out;
+  transition: 0.2s ease-out;
+}
+.toggle.checked:before {
+  background-color: #808080;
+  /*background-color #ffd900;*/
+}
+.toggle.checked:after {
+  left: 33px;
+  box-shadow: 0 9px 28px -6px rgba(0, 0, 0, 0.5);
+}
