@@ -1,6 +1,6 @@
 {
-  "name": "gmocardapp",
-  "productName": "gmocardapp",
+  "name": "gmocard-app",
+  "productName": "gmocard-app",
   "version": "3.2.10",
   "description": "Electron application for gmocard payment",
   "main": "build/gmoapp.js",
@@ -15,7 +15,6 @@
     "name": "ebs-uchimura",
     "email": "uchimura@ebisu-do.jp"
   },
-  "license": "MIT",
   "dependencies": {
     "@types/dotenv": "^8.2.0",
     "@types/node": "^20.8.9",
@@ -32,5 +31,6 @@
     "electron": "^29.3.0",
     "electron-packager": "^17.1.2",
     "typescript": "^5.8.3"
-  }
+  },
+  "license": "GPL-3.0"
 }

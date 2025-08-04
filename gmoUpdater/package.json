@@ -1,6 +1,6 @@
 {
-  "name": "gmocardupdateapp",
-  "productName": "gmocardupdateapp",
+  "name": "gmocard-update-app",
+  "productName": "gmocard-update-app",
   "version": "1.6.5",
   "description": "Node application for updating payment info",
   "main": "gmoupdate.ts",
@@ -12,7 +12,6 @@
     "name": "ebs-uchimura",
     "email": "uchimura@ebisu-do.jp"
   },
-  "license": "MIT",
   "dependencies": {
     "@types/node": "^20.8.9",
     "axios": "^1.6.5",
@@ -24,5 +23,6 @@
   },
   "devDependencies": {
     "@types/node-cron": "^3.0.11"
-  }
+  },
+  "license": "GPL-3.0"
 }
